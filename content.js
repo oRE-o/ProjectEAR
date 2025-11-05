@@ -9,8 +9,8 @@ chrome.storage.local.get('isExtensionEnabled', (data) => {
   console.log('Elice Animation Replacer: 활성화 상태. 감시를 시작합니다.');
 
   const MAIN_CONTAINER_SELECTOR = '[class*="StyledRabbitAnimation"]';
-  const DEFAULT_RABBIT_URL = 'https://i.imgur.com/bi29MUr.gif';
-  const DEFAULT_TURTLE_URL = 'https://i.imgur.com/JbKF2DP.jpeg';
+  const DEFAULT_RABBIT_URL = 'https://media1.tenor.com/m/kiTCQ9dkCfMAAAAC/chainsaw-man-chainsaw-man-dance.gif';
+  const DEFAULT_TURTLE_URL = 'https://media1.tenor.com/m/Vyts2XFg1vsAAAAC/reze-chainsaw-man.gif';
   const RABBIT_EXTRA_DURATION = 3000;
   
   let eacTimer = null; 
