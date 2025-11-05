@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { width: 350px; padding: 10px; font-family: sans-serif; }
+    input[type="text"] { width: 95%; }
+    input[type="file"] { margin-top: 5px; }
+    button { margin-top: 10px; }
+    #status { margin-top: 5px; color: green; }
+    .setting-box { padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; }
+    .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: #2196F3; }
+    input:checked + .slider:before { transform: translateX(26px); }
+  </style>
+  </head>
+<body>
+    <div>
+    <strong>확장 기능 활성화</strong>
+    <label class="switch">
+      <input type="checkbox" id="masterToggle">
+      <span class="slider"></span>
+    </label>
+  </div>
+  <hr>
+
+  <h3>정답 시 이미지 설정</h3>
+  <div class="setting-box" id="rabbitSettings">
+    <input type="text" id="imageUrlRabbit" placeholder="이미지 URL 입력...">
+    <input type="file" id="imageFileRabbit" accept="image/*">
+  </div>
+
+  <h3>오답 시 이미지 설정</h3>
+  <div class="setting-box" id="turtleSettings">
+    <input type="text" id="imageUrlTurtle" placeholder="이미지 URL 입력...">
+    <input type="file" id="imageFileTurtle" accept="image/*">
+  </div>
+
+  <hr>
+  <button id="saveButton">설정 저장</button>
+  <button id="resetButton">설정 초기화</button>
+  <div id="status"></div>
+
+  <script src="options.js"></script> </body>
+</html>

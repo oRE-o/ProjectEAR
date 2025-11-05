@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Elice Animation Replacer",
-  "version": "4.3",
+  "version": "5.4", 
   "description": "Elice 플랫폼의 정답/오답 애니메이션을 커스텀 이미지로 대체합니다.",
   
   "permissions": [
@@ -9,7 +9,8 @@
   ],
 
   "action": {
-    "default_popup": "popup.html" 
+    "default_popup": "popup.html", 
+    "default_title": "Elice Replacer 설정"
   },
 
   "content_scripts": [
@@ -17,5 +18,14 @@
       "matches": ["https://*.elice.io/*"],
       "js": ["content.js"]
     }
-  ]
+  ],
+
+  "options_page": "options.html", 
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "elice-animation-replacer@github.com",
+      "strict_min_version": "109.0"
+    }
+  }
 }
