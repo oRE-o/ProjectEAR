@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Elice Animation Replacer",
+  "version": "4.3",
+  "description": "Elice 플랫폼의 정답/오답 애니메이션을 커스텀 이미지로 대체합니다.",
+  
+  "permissions": [
+    "storage" 
+  ],
+
+  "action": {
+    "default_popup": "popup.html" 
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://*.elice.io/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
