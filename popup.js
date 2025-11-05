@@ -14,14 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const resetButton = document.getElementById('resetButton');
   const statusEl = document.getElementById('status');
   
-  const DEFAULT_RABBIT_URL = 'https://media1.tenor.com/m/kiTCQ9dkCfMAAAAC/chainsaw-man-chainsaw-man-dance.gif';
-  const DEFAULT_TURTLE_URL = 'https://media1.tenor.com/m/Vyts2XFg1vsAAAAC/reze-chainsaw-man.gif';
+  // 기본 URL 정의
+  const DEFAULT_RABBIT_URL = 'https://i.imgur.com/bi29MUr.gif';
+  const DEFAULT_TURTLE_URL = 'https://i.imgur.com/JbKF2DP.jpeg';
 
   // --- 함수 정의 ---
 
   /**
-   * 마스터 토글 상태에 따라 UI 컴포넌트를 활성화/비활성화합니다.
-   * @param {boolean} isEnabled - 확장 기능 활성화 여부
+   * UI 컴포넌트를 활성화/비활성화합니다.
    */
   function updateUiState(isEnabled) {
     imageUrlRabbit.disabled = !isEnabled;
@@ -36,12 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * File 객체 또는 URL 문자열을 받아 chrome.storage.local에 저장합니다.
+   * File 객체 또는 URL 문자열을 chrome.storage.local에 저장합니다.
    * File 객체가 우선순위를 가집니다.
-   * @param {string} key - 저장할 스토리지 키
-   * @param {string} url - 이미지 URL (text input)
-   * @param {File | undefined} file - 이미지 파일 (file input)
-   * @returns {Promise<boolean>} 파일이 저장되었는지 여부
    */
   function saveImage(key, url, file) {
     return new Promise((resolve, reject) => {
@@ -57,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // (우선순위 2) 파일이 없고 URL이 있으면 URL 문자열 그대로 저장
         chrome.storage.local.set({ [key]: url }, () => resolve(false));
       } else {
-        // 입력값이 없으면 아무 작업도 하지 않음
+        // 입력값이 없으면 아무 작업도 하지 않음 (덮어쓰기 방지)
         resolve(false);
       }
     });
@@ -65,8 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /**
    * 사용자에게 상태 메시지를 표시합니다.
-   * @param {string} message - 표시할 텍스트
-   * @param {'success' | 'warning' | 'info' | 'error'} type - 메시지 타입
    */
   function showStatus(message, type = 'success') {
     statusEl.textContent = message;
@@ -74,6 +68,57 @@ document.addEventListener('DOMContentLoaded', () => {
                           type === 'warning' ? 'orange' :
                           type === 'info'    ? 'blue' : 'red';
   }
+  
+  // ✨✨✨ (새 함수!) 파일이 선택되면 '즉시' 저장하는 함수 ✨✨✨
+  /**
+   * <input type="file">의 'change' 이벤트를 받아,
+   * 파일을 즉시 Data URL로 변환하고 저장합니다.
+   * @param {Event} e - 'change' 이벤트 객체
+   */
+  async function handleFileSelectAndSave(e) {
+    const fileInput = e.target;
+    const file = fileInput.files[0];
+
+    if (!file) return; // 사용자가 '취소'를 누른 경우
+
+    // 비활성화하여 중복 저장 방지
+    saveButton.disabled = true;
+    fileInput.disabled = true;
+    showStatus('파일 저장 중... (팝업을 닫지 마세요!)', 'info');
+
+    try {
+      // 어떤 키(rabbit/turtle)와 어떤 URL 입력창을 비워야 하는지 결정
+      const key = (fileInput.id === 'imageFileRabbit') ? 'userImageRabbit' : 'userImageTurtle';
+      const urlInputToClear = (fileInput.id === 'imageFileRabbit') ? imageUrlRabbit : imageUrlTurtle;
+      
+      // File 객체와 함께 'undefined' URL을 전달하여 파일 저장을 강제
+      await saveImage(key, undefined, file);
+      
+      // 저장이 성공하면, 연관된 URL 입력창을 비움
+      urlInputToClear.value = '';
+      
+      showStatus('파일이 자동 저장되었습니다.', 'success');
+      
+    } catch (error) {
+      console.error('파일 자동 저장 중 오류 발생:', error);
+      showStatus('오류: 파일 저장 실패.', 'error');
+    } finally {
+      // (중요!) 처리가 끝나면 파일 입력을 초기화
+      fileInput.value = ''; 
+      
+      // 버튼/입력창 활성화
+      setTimeout(() => {
+        if (masterToggle.checked) {
+          saveButton.disabled = false;
+          fileInput.disabled = false;
+        }
+        if (statusEl.textContent === '파일이 자동 저장되었습니다.') {
+          statusEl.textContent = '';
+        }
+      }, 2000);
+    }
+  }
+  // ✨✨✨ (새 함수 끝) ✨✨✨
 
   // --- 이벤트 리스너 및 초기화 ---
 
@@ -81,27 +126,22 @@ document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.local.get(
     ['userImageRabbit', 'userImageTurtle', 'isExtensionEnabled'], 
     (data) => {
-      // 1-1. 토끼 URL 로드 (Data URL은 로드하지 않음)
+      // Data URL(파일)이 저장되어 있으면, "(파일 저장됨)" 등으로 표시 (선택사항)
+      // (여기서는 이전과 동일하게 http URL만 표시)
       if (data.userImageRabbit && data.userImageRabbit.startsWith('http')) {
         imageUrlRabbit.value = data.userImageRabbit;
       } else if (!data.userImageRabbit) {
-        // (저장된 값이 아예 없으면 기본 URL 표시)
         imageUrlRabbit.value = DEFAULT_RABBIT_URL;
       }
-      // (Data URL이 저장되어 있으면 입력창은 비워둠)
 
-      // 1-2. 거북이 URL 로드
       if (data.userImageTurtle && data.userImageTurtle.startsWith('http')) {
         imageUrlTurtle.value = data.userImageTurtle;
       } else if (!data.userImageTurtle) {
         imageUrlTurtle.value = DEFAULT_TURTLE_URL;
       }
       
-      // 1-3. 마스터 토글 상태 로드
       const isEnabled = data.isExtensionEnabled !== false; 
       masterToggle.checked = isEnabled;
-      
-      // 1-4. UI 상태 동기화
       updateUiState(isEnabled);
     }
   );
@@ -116,69 +156,51 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => statusEl.textContent = '', 2000);
   });
 
-  // 3. 파일 선택 시 사용자에게 경고
-  const fileWarning = () => {
-    showStatus('파일 선택됨. "설정 저장"을 눌러주세요.', 'warning');
-  };
-  imageFileRabbit.addEventListener('change', fileWarning);
-  imageFileTurtle.addEventListener('change', fileWarning);
+  // 3. ✨ (수정됨!) 파일 '선택' 시 자동 저장 리스너 연결
+  imageFileRabbit.addEventListener('change', handleFileSelectAndSave);
+  imageFileTurtle.addEventListener('change', handleFileSelectAndSave);
 
-  // 4. 저장 버튼
+  // 4. '저장' 버튼 (이제 주로 URL 저장을 담당)
   saveButton.addEventListener('click', async () => {
     
     saveButton.disabled = true;
-    const hasFile = imageFileRabbit.files[0] || imageFileTurtle.files[0];
-    if (hasFile) {
-      showStatus('파일 저장 중... (팝업을 닫지 마세요!)', 'info');
-    } else {
-      showStatus('저장 중...', 'info');
-    }
+    // (파일 저장 중... 경고는 자동 저장이 하므로 제거)
+    showStatus('URL 저장 중...', 'info');
 
     try {
-      // (로직 수정!) 파일이 없으면, URL 입력창의 값을 저장.
-      const rabbitFileUsed = await saveImage('userImageRabbit', imageUrlRabbit.value, imageFileRabbit.files[0]);
-      const turtleFileUsed = await saveImage('userImageTurtle', imageUrlTurtle.value, imageFileTurtle.files[0]);
+      // (수정됨!) 'saveImage'는 이제 URL 입력창의 값'만' 신경 씀.
+      // (파일 입력은 'handleFileSelectAndSave'가 처리하고 비웠기 때문)
+      await saveImage('userImageRabbit', imageUrlRabbit.value, imageFileRabbit.files[0]);
+      await saveImage('userImageTurtle', imageUrlTurtle.value, imageFileTurtle.files[0]);
       
-      // (중요!) 파일이 사용된 경우, URL 입력창을 비움
-      if (rabbitFileUsed) {
-        imageUrlRabbit.value = '';
-      }
-      if (turtleFileUsed) {
-        imageUrlTurtle.value = '';
-      }
-      
-      imageFileRabbit.value = '';
-      imageFileTurtle.value = '';
-
+      // (파일 입력창은 비울 필요 없음, 이미 자동 저장 후 비워짐)
       showStatus('설정이 저장되었습니다.', 'success');
       
     } catch (error) {
-      console.error('설정 저장 중 오류 발생:', error);
+      console.error('URL 저장 중 오류 발생:', error);
       showStatus('오류: 저장이 실패했습니다.', 'error');
     } finally {
+      // (로직 동일)
       saveButton.disabled = false;
       setTimeout(() => {
         if (masterToggle.checked) {
           saveButton.disabled = false;
         }
-        if (statusEl.textContent === '설정이 저장되었습니다.') {
+        if (statusEl.textContent === '설정이 저장되었습니다.' || statusEl.textContent === 'URL 저장 중...') {
           statusEl.textContent = '';
         }
       }, 2000);
     }
   });
 
+  // 5. 리셋 버튼 (이전과 동일)
   resetButton.addEventListener('click', () => {
-    // 이미지 설정을 '기본 URL'로 되돌림
     chrome.storage.local.set({
         'userImageRabbit': DEFAULT_RABBIT_URL,
         'userImageTurtle': DEFAULT_TURTLE_URL
     }, () => {
-      // 입력창에도 기본 URL을 표시
       imageUrlRabbit.value = DEFAULT_RABBIT_URL;
       imageUrlTurtle.value = DEFAULT_TURTLE_URL;
-      
-      // 파일 입력창은 비움
       imageFileRabbit.value = '';
       imageFileTurtle.value = '';
       
