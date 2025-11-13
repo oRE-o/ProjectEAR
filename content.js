@@ -8,7 +8,6 @@ chrome.storage.local.get('isExtensionEnabled', (data) => {
 
   console.log('Elice Animation Replacer: 활성화 상태. 감시를 시작합니다.');
 
-  const MAIN_CONTAINER_SELECTOR = '[class*="StyledRabbitAnimation"]';
   const DEFAULT_RABBIT_URL = 'https://media1.tenor.com/m/kiTCQ9dkCfMAAAAC/chainsaw-man-chainsaw-man-dance.gif';
   const DEFAULT_TURTLE_URL = 'https://media1.tenor.com/m/Vyts2XFg1vsAAAAC/reze-chainsaw-man.gif';
   const RABBIT_EXTRA_DURATION = 3000;
@@ -32,8 +31,8 @@ chrome.storage.local.get('isExtensionEnabled', (data) => {
       position: fixed;
       left: 50%;
       top: 50%;
-      width: 70vmin; /* ✨ (수정됨!) 50vmin -> 70vmin으로 확대 */
-      height: 70vmin; /* ✨ (수정됨!) 50vmin -> 70vmin으로 확대 */
+      width: 70vmin;
+      height: 70vmin;
       object-fit: contain;
       z-index: 999999;
     }
@@ -183,20 +182,42 @@ chrome.storage.local.get('isExtensionEnabled', (data) => {
     turtleObserver.observe(turtleDiv, attributeObserverOptions);
   }
 
+  function findAndSetupContainer(node) {
+    if (node.nodeType !== 1 || node.tagName !== 'DIV' || node.dataset.eacInitialized) {
+        return; 
+    }
+
+    if (node.children &&
+        node.children.length >= 2 &&
+        node.children[0] && node.children[0].classList &&
+        node.children[1] && node.children[1].classList &&
+        node.children[0].classList.contains('u-no-display') &&
+        node.children[1].classList.contains('u-no-display')
+    ) {
+        console.log('Elice Animation Replacer: 새 로직으로 컨테이너 발견!', node);
+        setupAnimationObservers(node);
+    }
+  }
+
   const mainObserver = new MutationObserver((mutationsList, observer) => {
-    for (const mutation of mutationsList) {
-      for (const node of mutation.addedNodes) {
-        if (node.nodeType === 1) { 
-          if (node.matches(MAIN_CONTAINER_SELECTOR)) {
-            setupAnimationObservers(node);
-          }
-          const container = node.querySelector(MAIN_CONTAINER_SELECTOR);
-          if (container) {
-            setupAnimationObservers(container);
+      for (const mutation of mutationsList) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType !== 1) continue; // Element 노드만 처리
+
+          findAndSetupContainer(node);
+
+          try {
+            const potentialContainers = node.querySelectorAll('div');
+            for (const container of potentialContainers) {
+                findAndSetupContainer(container);
+            }
+          } catch (e) {
+            // querySelectorAll이 실패할 수 있는 노드(예: text node)가 있지만,
+            // node.nodeType !== 1 체크로 대부분 걸러집니다.
+            console.warn('Elice Animation Replacer: 하위 노드 검색 중 오류', e);
           }
         }
       }
-    }
   });
   
   createPersistentContainer(); 
